@@ -26,6 +26,6 @@ default_content = config(connect=config_connect(host="127.0.0.1", port=28888),ro
 _check_file_and_create_yaml(file_path, default_content)
 
 def config_read() -> config:
-    with open('config.yaml', encoding='utf-8') as file:
+    with open(os.path.join(os.path.dirname(__file__),"config.yaml"), encoding='utf-8') as file:
         config_dict = yaml.safe_load(file)
         return config(**config_dict)

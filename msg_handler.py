@@ -5,9 +5,6 @@ from typing import List, Optional
 
 import os
 
-import logging
-
-from logging.handlers import RotatingFileHandler
 # import logging
 # from logging.handlers import RotatingFileHandler
 
@@ -21,21 +18,6 @@ from logging.handlers import RotatingFileHandler
 # handler = RotatingFileHandler('app.log', maxBytes=10000, backupCount=5)
 # logger = logging.getLogger(__name__)
 # logger.addHandler(handler)
-
-logger = logging.getLogger(__name__)
-
-file_handler = RotatingFileHandler('app.log', maxBytes=10000, backupCount=3)
-file_handler.setLevel(logging.DEBUG)
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.DEBUG)
-
-
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-file_handler.setFormatter(formatter)
-console_handler.setFormatter(formatter)
-
-logger.addHandler(file_handler)
-logger.addHandler(console_handler)
 
 
 class ItemBase(BaseModel):
@@ -104,10 +86,8 @@ class handler:
                             byte=msg_data.bytesExtra
                             wxid_group =byte.userName
                     if os.path.exists("./Chino_old"):
-                        os.chdir("./Chino_old")
 
                         await chino_old_main(wxid,wxid_group,qu)
-                        os.chdir("..")
                     else:
                         raise Exception("./Chino_old folder not found")
         # if os.path.exists("./Chino_old"):
