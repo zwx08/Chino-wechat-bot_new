@@ -129,3 +129,4 @@ dmypy.json
 .pyre/
 .history
 app.log.*
+Chino_old/wx_data.json
