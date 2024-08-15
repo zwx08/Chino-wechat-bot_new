@@ -130,3 +130,5 @@ dmypy.json
 .history
 app.log.*
 Chino_old/wx_data.json
+upload/pixiv_cache.png
+Pipfile.lock

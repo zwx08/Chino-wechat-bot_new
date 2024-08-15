@@ -65,61 +65,28 @@ Replace 说不定会删掉，别用。
 ## 示例插件
 
 ```python
-import os
-import sys
-import httpx
+import datetime
 
 from Chino_old.plugins_parser import plugin_common
-from Chino_old.model_definition import AnswerBase
+from Chino_old.model_definition import AnswerBase, AnswerBaseList
 
-class ip(plugin_common):
 
-    __version__='0.0.1'
+class TimePlugin(plugin_common):
+
+
+    _version_ ='0.1'
     @classmethod
-    def main(cls,msg_l)-> AnswerBase | None:
-        qu=msg_l["qu"]
-        if qu.find("&ip") != -1:
-            if len(qu) <= 4:
-                an = httpx.get('https://checkip.amazonaws.com').text.strip()
-            else:
-                an = cls.getting_ip(qu[4:])
-            answer_model=AnswerBase(answer=an)
-            return answer_model
-        else:
-            return None
+    def main(cls,msg_l) -> AnswerBase | AnswerBaseList | None:
+        if msg_l["qu"].find("&getTime") != -1:
 
+            # 获取服务器时间
+            current_time = datetime.datetime.now()
+
+            # 正确的格式化时间方式
+            formatted_time = current_time.strftime('%Y-%m-%d %H:%M:%S')
+
+            return AnswerBase(answer=formatted_time,send_way="Text")
     @staticmethod
-    def getting_ip(args): #ip读取
-        url = 'http://freeapi.ipip.net/' #中文免费
-        url2 = 'http://ip-api.com/json/' #外国网站
-        url=url+format(args)
-        url2 = url2 + format(args)
-        response = httpx.get(url)
-        response2 = httpx.get(url2)
-
-        str=response.text.replace('\"','') #去掉双引号
-        str=str.replace('[','')      #去掉方括号
-        str=str.replace(']','')
-        str=str.replace(' ','')
-
-        str=str.split(",")  #已逗号为分割符号，分割字符串为数组
-        str[4] = str[4].replace('\n', '') #去掉回车符号
-
-        strpp={}         #定义一个字典strpp
-        strpp=response2.json()  #把英文网站json接口返回值传给字典strpp
-
-
-        return f"""您查询的IP地址:{args})
-        <www.ipip.net>
-        国家:{str[0]}
-        省份:{str[1]}
-        城市:{str[2]}
-        区域:{str[3]}
-        运营商:{str[4]}"
-        <www.ip-api.com>
-        国家:{strpp.get('country')}
-        城市:{strpp.get('city')}
-        经纬度坐标:{strpp.get('lat')},{strpp.get('lon')}
-        运营商编号:{strpp.get('as')}
-        ISP服务商:{strpp.get('isp')}"""
+    def help():
+        return "&getTime to getTime"
 ```

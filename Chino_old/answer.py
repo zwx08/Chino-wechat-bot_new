@@ -42,108 +42,39 @@ plugins = loader.plugins
 print("plugins"+str(  plugins))
 
 
-def run_plugin(row):
-    global an_
-    printinf(f"查询到qu_key({row['NAME']})")
-    if row["an_way"] == "0":
-        an_ = row["answer"]
-    elif row["an_way"] == '1':
-        #print(.411)
-        Def=row["answer"]
-        if Def.find("{plugin}") != -1:
-            Def=Def.replace("{plugin}",f"plugins.{row['filename']}")
-        try:
-            an_=eval(f"{Def}")(msg_l)
-        except func_timeout.exceptions.FunctionTimedOut:
-            printerr("qu_key({row['NAME']})执行超时")
-            an_="超时-{row['NAME']}"
-def keyword_(keyw,row):
-    qu=msg_l["qu"]
-    if row["key_way"] == "0":
-        #print(.21)
-        if qu == keyw:
-            #print(.31)
-            return run_plugin(row)
-
-    elif row["key_way"] == "1":
-        #print(.22)
-        #qu=qu.replace(":@ ","",1)
-        if qu.find(keyw) == 0:
-            #print(.32)
-            return run_plugin(row)
-
-    elif row["key_way"] == "2":
-        #print(.23)
-        if qu.find(keyw) != -1:
-            #print(.33)
-            return run_plugin(row)
-def sql_row(rows):
-    for row in rows:
-        #print(row)
-        if row["Enabled"] == "True":
-
-            keyword=ujson.loads(row["keyword"])
-            #printinf(keyword)
-            if isinstance(keyword,(list)) is True:
-                for key_x in keyword:
-                    keyword_(key_x,row)
-            elif isinstance(keyword,(str,int)) is True:
-                keyword_(keyword,row)
-
-def sql_row_access(rows):
-    global an_
-    for row in rows:
-        if row["Enabled"] == "True":
-            if row["access_way"] == "0":
-                Def=row["access"]
-                if Def.find("{plugin}") != -1:
-                    Def=Def.replace("{plugin}",f"plugins.{row['filename']}")
-                try:
-                    an_=eval(f"{Def}")(msg_l)
-                except func_timeout.exceptions.FunctionTimedOut:
-                    printerr("access({row['NAME']})执行超时")
-                #print(an_)
-
-
-
-number_of_times={}   #每10s清空一次number_of_times
+number_of_times={}
+# 清空number_of_times
 def clear_number_of_times():
     number_of_times.clear()
-schedule.every(10).minutes.do(number_of_times.clear)
+schedule.every(1).minutes.do(number_of_times.clear)
 
-def run_an_replace(row,an):
-    printinf(f"查询到an_replace{row['NAME']}")
-    if row["re_way"] == "0":
-        return an.replace(row["keyword"],row["replace"])
-    elif row["re_way"] == '1':
-        Def=row["replace"]
-        if Def.find("{plugin}") != -1:
-            Def=Def.replace("{plugin}",f"plugins.{row['filename']}")
-        try:
-            an=eval(f"{Def}")(msg_l,an)
-        except func_timeout.exceptions.FunctionTimedOut:
-            printerr("qu_key({row['NAME']})执行超时")
-            an="超时-an_replace({row['NAME']})"
-    return an
-
-def sql_row_an_replace(rows,an):
-    for row in rows:
-        if row["Enabled"] == "True":
-            if row["key_way"] == "0":
-                if an == row["keyword"]:
-                    an=run_an_replace(row,an)
-            elif row["key_way"] == "1":
-                if an.find(row["keyword"]) != -1:
-                    an=run_an_replace(row,an)
-    return an
+def format_plugin_help(plugin_help):
+    # Initialize an empty list to store each line of the formatted string
+    lines = []
+    lines.append("=====Help=====")
+    # Iterate through each plugin in the dictionary
+    for plugins_type, plugins_sec in plugin_help.items():
+        lines.append(f"===Type: {plugins_type}===")
+        # Append the plugin name, followed by its commands and descriptions
+        for plugin_name, plugin_help_detail in plugins_sec.items():
+            lines.append(f"---{plugin_name}---")
+            lines.append(f"{plugin_help_detail}")
 
 
+    # Combine all lines into a single string, separated by new lines
+    formatted_string = "\n".join(lines)
+
+    # Encapsulate the string in a Markdown code block
+    markdown_code_block = f"{formatted_string}"
+
+    return AnswerBase(answer=markdown_code_block)
 
 def Replace_msg(context:str):  #TODO
     ...
 
 
 async def send_msg_an(plugin_result: AnswerBase):        #允许传入列表，实现每次调用加一次number_of_times[wxid_group]，且如果这个数字超过指定数量后不回复
+    schedule.run_pending()
     wxid=msg_l["wxid"]
     #wxid_group=l["wxid_group"]
     #print(an)
@@ -163,8 +94,8 @@ async def send_msg_an(plugin_result: AnswerBase):        #允许传入列表，�
         number_of_times[wxid] += 1
     else:
         number_of_times[wxid] = 1
-    if number_of_times[wxid] > 10:
-        return
+    if number_of_times[wxid] > 20:
+        logger.info(f"{wxid} 触发速度限制")
     answer_send=plugin_result.answer
 
     if isinstance(answer_send,str):
@@ -311,14 +242,17 @@ async def answer(wxid,wxid_group,qu):  #主调用
 
 
 
-
+    plugin_help={}
     #plugin
     #print(plugins.items())
     for plugins_type, plugins_sec in plugins.items():
         match plugins_type:
             case "plugin_common":
+                plugin_help["plugin_common"]={}
                 for plugin_name, plugin_class in plugins_sec.items():
-                    plugin_result=plugin_class.main(msg_l)
+                    plugin_result=await plugin_class.main(msg_l)
+                    #字典中增加插件名：插件结果
+                    plugin_help["plugin_common"][plugin_name]=plugin_class.help()
                     if plugin_result is not None:
                         if isinstance(plugin_result,AnswerBase):
                             await send_msg_an(plugin_result)
@@ -326,9 +260,11 @@ async def answer(wxid,wxid_group,qu):  #主调用
                             for answer_result_base in plugin_result.answers:
                                 await send_msg_an(answer_result_base)
             case "plugin_admin":
+                plugin_help["plugin_admin"]={}
                 if msg_l["wxid"] in data["wxid_admin"]:
                     for plugin_name,plugin_class in plugins_sec:
-                        plugin_result=plugin_class.main(msg_l)
+                        plugin_result=await plugin_class.main(msg_l)
+                        plugin_help["plugin_admin"][plugin_name]=plugin_class.help()
                         if plugin_result is not None:
                             if isinstance(plugin_result,AnswerBase):
                                 await send_msg_an(plugin_result)
@@ -338,7 +274,8 @@ async def answer(wxid,wxid_group,qu):  #主调用
 
 
 
-
+    if msg_l["qu"].find("&help")==0:
+        await send_msg_an(format_plugin_help(plugin_help))
     # #other部分
     # sql_row(row_qukey)
     # if an_ is not None :

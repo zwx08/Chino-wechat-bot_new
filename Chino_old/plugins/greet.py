@@ -10,7 +10,7 @@ from Chino_old.plugins.call import call
 class greet(plugin_common):
     __version__='0.0.1'
     @classmethod
-    def main(cls,msg_l):
+    async def main(cls,msg_l):
         if msg_l["qu"].find(msg_l["robotname"]) != -1 or msg_l["qu"].find(":@") != -1:
 
             an=None
@@ -84,3 +84,7 @@ class greet(plugin_common):
                     an=call._a_ (msg_l,an)
                 return AnswerBase(answer=an,send_way="Text")
         return None
+
+    @staticmethod
+    def help():
+        pass

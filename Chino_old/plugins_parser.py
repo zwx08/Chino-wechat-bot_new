@@ -8,8 +8,14 @@ class plugin_common(object):
     #     pass
     @classmethod
     @pluginlib.abstractmethod
-    def main(cls,msg_l):
+    async def main(cls,msg_l):
         pass
+
+    @staticmethod
+    @pluginlib.abstractmethod
+    def help():
+        pass
+
 
 @pluginlib.Parent('plugin_admin', group='msg_plugin')
 class plugin_admin(object):
@@ -19,9 +25,13 @@ class plugin_admin(object):
     #     pass
     @classmethod
     @pluginlib.abstractmethod
-    def main(cls,msg_l):
+    async def main(cls,msg_l):
         pass
 
+    @staticmethod
+    @pluginlib.abstractmethod
+    def help():
+        pass
 
 @pluginlib.Parent('replace_static', group='msg_replace')
 class replace_static(object):

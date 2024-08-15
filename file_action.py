@@ -8,6 +8,7 @@ class config_connect(BaseModel):
 
 class config(BaseModel):
     connect: config_connect
+    upload: config_connect
     robotname: str
 
 def _check_file_and_create_yaml(file_path, default_content):
@@ -20,7 +21,7 @@ def _check_file_and_create_yaml(file_path, default_content):
 file_path = "config.yaml"
 
 # 创建 config 实例
-default_content = config(connect=config_connect(host="127.0.0.1", port=28888),robotname="robottest").model_dump()
+default_content = config(connect=config_connect(host="127.0.0.1", port=28888),upload=config_connect(host="127.0.0,1",port=28887),robotname="robottest").model_dump()
 
 # 检查文件并创建默认对象
 _check_file_and_create_yaml(file_path, default_content)

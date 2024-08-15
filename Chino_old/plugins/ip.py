@@ -10,8 +10,11 @@ class ip(plugin_common):
 
 
     __version__='0.0.1'
+    @staticmethod
+    def help():
+        return "&ip =>本地IP , &ip <ip> =>查询IP"
     @classmethod
-    def main(cls,msg_l)-> AnswerBase | None:
+    async def main(cls,msg_l)-> AnswerBase | None:
         qu=msg_l["qu"]
         if qu.find("&ip") != -1:
             if len(qu) <= 4:

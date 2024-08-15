@@ -1,8 +1,7 @@
-import requests
 import datetime
 
 from Chino_old.plugins_parser import plugin_common
-from Chino_old.model_definition import AnswerBase
+from Chino_old.model_definition import AnswerBase, AnswerBaseList
 
 
 class TimePlugin(plugin_common):
@@ -10,7 +9,7 @@ class TimePlugin(plugin_common):
 
     _version_ ='0.1'
     @classmethod
-    def main(cls,msg_l) -> AnswerBase | None:
+    async def main(cls,msg_l) -> AnswerBase | AnswerBaseList | None:
         if msg_l["qu"].find("&getTime") != -1:
 
             # 获取服务器时间
@@ -20,3 +19,6 @@ class TimePlugin(plugin_common):
             formatted_time = current_time.strftime('%Y-%m-%d %H:%M:%S')
 
             return AnswerBase(answer=formatted_time,send_way="Text")
+    @staticmethod
+    def help():
+        return "&getTime to getTime"
