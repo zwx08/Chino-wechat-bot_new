@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 from .file_action import data_read
@@ -30,14 +31,14 @@ class wx_data_model(BaseModel):
 
 
 wx_data_file=os.path.join(os.path.dirname(__file__),"wx_data.json")
-def preload():
+async def preload():
 
     if not os.path.isfile(wx_data_file):
         # 文件不存在，创建文件
         with open(wx_data_file, 'w') as fp:
             fp.write(json.dumps({}))
 
-    own_inf=get_bot_details()
+    own_inf=await get_bot_details()
     #own_inf_wxid=own_inf["data"]["wxid"]
     #own_inf_nickName=own_inf["data"]["nickName"]
     #own_inf_account=own_inf["data"]["account"]
@@ -54,4 +55,4 @@ def preload():
         file.close()
 
 if __name__=="__main__":
-    preload()
+    asyncio.run(preload())

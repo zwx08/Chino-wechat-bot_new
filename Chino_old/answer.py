@@ -1,5 +1,6 @@
 #默认为使用wxid作为userid，如果想要更改为使用单一userid请更改所有调用API_answer后的wxid改为userid
 from ast import Tuple
+import asyncio
 import os
 from pluginlib import PluginLoader
 import pluginlib
@@ -29,7 +30,9 @@ config=config_read()
 address=config.connect.host
 port=config.connect.port
 robotname=config.robotname
-preload()
+loop = asyncio.get_running_loop()  # Python 3.7+
+result = asyncio.run_coroutine_threadsafe(preload(), loop)
+
 # load_plugins()
 
 # row_qukey_admin=action_sql.qu_key.admin.read()
@@ -73,9 +76,9 @@ def Replace_msg(context:str):  #TODO
     ...
 
 
-async def send_msg_an(plugin_result: AnswerBase):        #允许传入列表，实现每次调用加一次number_of_times[wxid_group]，且如果这个数字超过指定数量后不回复
+async def send_msg_an(plugin_result: AnswerBase,wxid):        #允许传入列表，实现每次调用加一次number_of_times[wxid_group]，且如果这个数字超过指定数量后不回复
     schedule.run_pending()
-    wxid=msg_l["wxid"]
+    # wxid=msg_l["wxid"]
     #wxid_group=l["wxid_group"]
     #print(an)
 
@@ -114,39 +117,39 @@ async def send_msg_an(plugin_result: AnswerBase):        #允许传入列表，�
     match plugin_result.send_way:
         case "Text":
             if isinstance(answer_send,str):
-                api.send_msg.text(wxid,answer_send)
+                await api.send_msg.text(wxid,answer_send)
             elif isinstance(answer_send,dict):
-                api.send_msg.text(wxid,**answer_send)
+                await api.send_msg.text(wxid,**answer_send)
         case "Image":
             if isinstance(answer_send,str):
-                api.send_msg.image(wxid,answer_send)
+                await api.send_msg.image(wxid,answer_send)
             elif isinstance(answer_send,dict):
-                api.send_msg.image(wxid,**answer_send)
+                await api.send_msg.image(wxid,**answer_send)
         case "File":
             if isinstance(answer_send,str):
-                api.send_msg.file(wxid,answer_send)
+                await api.send_msg.file(wxid,answer_send)
             elif isinstance(answer_send,dict):
-                api.send_msg.file(wxid,**answer_send)
+                await api.send_msg.file(wxid,**answer_send)
         case "Gif":
             if isinstance(answer_send,str):
-                api.send_msg.gif(wxid,answer_send)
+                await api.send_msg.gif(wxid,answer_send)
             if isinstance(answer_send,dict):
-                api.send_msg.gif(wxid,**answer_send)
+                await api.send_msg.gif(wxid,**answer_send)
         case "Url":
             if isinstance(answer_send,str):
                 raise RuntimeError("Url发送方式仅支持dict")
             if isinstance(answer_send,dict):
-                api.send_msg.url(wxid,**answer_send)
+                await api.send_msg.url(wxid,**answer_send)
         case "xml":
             if isinstance(answer_send,str):
-                api.send_msg.xml(wxid,answer_send)
+                await api.send_msg.xml(wxid,answer_send)
             if isinstance(answer_send,dict):
-                api.send_msg.xml(wxid,**answer_send)
+                await api.send_msg.xml(wxid,**answer_send)
         case "quote":
             if isinstance(answer_send,str):
                 raise RuntimeError("quote发送方式仅支持dict")
             if isinstance(answer_send,dict):
-                api.send_msg.quote(wxid,**answer_send)
+                await api.send_msg.quote(wxid,**answer_send)
         case "Fav":
             if isinstance(answer_send,str):
                 try:
@@ -154,9 +157,9 @@ async def send_msg_an(plugin_result: AnswerBase):        #允许传入列表，�
                 except ValueError as e:
                     raise RuntimeError(f"Fav发送中需传入可转为int的favLocalID:{e}")
                 else:
-                    api.send_msg.fav(wxid,answer_send_int)
+                    await api.send_msg.fav(wxid,answer_send_int)
             if isinstance(answer_send,dict):
-                api.send_msg.fav(wxid,**answer_send)
+                await api.send_msg.fav(wxid,**answer_send)
 
 
     # if isinstance(an_,(str,int)) is True:
@@ -218,7 +221,7 @@ async def answer(wxid,wxid_group,qu):  #主调用
         isChatroom = False
     else:
         isChatroom = True
-    global msg_l
+    #global msg_l
     msg_l={"robotname":robotname,"qu":qu,"wxid":wxid,"wxid_group":wxid_group,"qu_xml":qu_xml,"qu_xml_data":qu_xml_data,"qu_reply_content":qu_reply_content,"qu_reply_wxid":qu_reply_wxid,'isChatroom': isChatroom}
     print(msg_l)
 
@@ -255,10 +258,10 @@ async def answer(wxid,wxid_group,qu):  #主调用
                     plugin_help["plugin_common"][plugin_name]=plugin_class.help()
                     if plugin_result is not None:
                         if isinstance(plugin_result,AnswerBase):
-                            await send_msg_an(plugin_result)
+                            await send_msg_an(plugin_result,wxid)
                         elif isinstance(plugin_result,AnswerBaseList):
                             for answer_result_base in plugin_result.answers:
-                                await send_msg_an(answer_result_base)
+                                await send_msg_an(answer_result_base,wxid)
             case "plugin_admin":
                 plugin_help["plugin_admin"]={}
                 if msg_l["wxid"] in data["wxid_admin"]:
@@ -267,15 +270,15 @@ async def answer(wxid,wxid_group,qu):  #主调用
                         plugin_help["plugin_admin"][plugin_name]=plugin_class.help()
                         if plugin_result is not None:
                             if isinstance(plugin_result,AnswerBase):
-                                await send_msg_an(plugin_result)
+                                await send_msg_an(plugin_result,wxid)
                             elif isinstance(plugin_result,AnswerBaseList):
                                 for answer_result_base in plugin_result.answers:
-                                    await send_msg_an(answer_result_base)
+                                    await send_msg_an(answer_result_base,wxid)
 
 
 
     if msg_l["qu"].find("&help")==0:
-        await send_msg_an(format_plugin_help(plugin_help))
+        await send_msg_an(format_plugin_help(plugin_help),wxid)
     # #other部分
     # sql_row(row_qukey)
     # if an_ is not None :

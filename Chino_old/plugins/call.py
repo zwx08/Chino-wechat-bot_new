@@ -12,7 +12,7 @@ class call(): #称呼
         config.write_yaml("call",conf)
 
     @staticmethod
-    def _a_ (msg_l:dict,an) -> str:
+    async def _a_ (msg_l:dict,an) -> str:
         wxid=msg_l["wxid"]
         wxid_group=msg_l["wxid_group"]
 
@@ -28,7 +28,7 @@ class call(): #称呼
                 #        print("有",anr)
                 else:
                     #update_group_member_details(port,wxid,wxid_group)
-                    wxid_de=get_wxid_details(wxid_group)
+                    wxid_de=await get_wxid_details(wxid_group)
                     nickName=wxid_de.data.nickName
                     #print(nickname)
                     anr=an.replace('_a_',nickName)

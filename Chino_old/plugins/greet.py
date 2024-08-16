@@ -81,7 +81,7 @@ class greet(plugin_common):
 
             if an is not None:
                 if an.find('_a_') != -1 :
-                    an=call._a_ (msg_l,an)
+                    an=await call._a_ (msg_l,an)
                 return AnswerBase(answer=an,send_way="Text")
         return None
 

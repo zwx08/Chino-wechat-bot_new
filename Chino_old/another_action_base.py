@@ -2,14 +2,14 @@ from Chino_old.api_action import get_wxid_details,get_chatroom_details,get_chatr
 from .standard_print import printerr
 
 
-def nickname(wxid_group):
+async def nickname(wxid_group):
     #update_group_member_details(port,wxid,wxid_group)
-    wxid_de=get_wxid_details(wxid_group)
+    wxid_de=await get_wxid_details(wxid_group)
     nickname=wxid_de.data.nickName
     return nickname
 
-def get_roomNick_in_chatroom(chatroom,userName):
-    apiget=get_chatroom_member(chatroom)
+async def get_roomNick_in_chatroom(chatroom,userName):
+    apiget=await get_chatroom_member(chatroom)
     for member in apiget.data.member:
         # 检查当前成员的userName是否为我们要查找的userName
         if member.userName == userName:

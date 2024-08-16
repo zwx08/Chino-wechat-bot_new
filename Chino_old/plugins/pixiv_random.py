@@ -91,6 +91,9 @@ class pixiv_random(plugin_common):
                     else:
                         print(f"Failed to download image: HTTP {response.status_code}")
                         return False
+            async def image_status(url):
+                response = httpx.head(url)
+                return response.status_code
 
             async def main():
                 config=config_read()
@@ -100,26 +103,13 @@ class pixiv_random(plugin_common):
                 if images:
                     # Assuming the API wraps the list of images in a 'data' key
                     for item in images:
-                        if state_download:=await download_image(item['url']) is True:
+                        st=await image_status(item['url'])
+                        if st == 200:
                             answerlist.append(AnswerBase(answer=process_image_data(item)))
-                            answerlist.append(AnswerBase(answer=upload_file,send_way="Image"))
-                        elif state_download == var404:
-                            params["num"]=1
-                            images_404retry = await fetch_images()
-                            if images_404retry:
-                                for item_404retry in images_404retry:
-                                    if state_download:=await download_image(item_404retry['url']) is True:
-                                        answerlist.append(AnswerBase(answer=process_image_data(item)))
-                                        answerlist.append(AnswerBase(answer=upload_file,send_way="Image"))
-                                    elif state_download == var404:
-                                        answerlist.append(AnswerBase(answer=process_image_data(item)))
-                                        answerlist.append(AnswerBase(answer="404NF!"))
-                                    else:
-                                        answerlist.append(AnswerBase(answer=process_image_data(item)))
-                                        answerlist.append(AnswerBase(answer=item['url']))
-                        else:
-                            answerlist.append(AnswerBase(answer=process_image_data(item)))
-                            answerlist.append(AnswerBase(answer=item['url']))
+                            answerlist.append(AnswerBase(answer=item['url'],send_way="Image"))
+                        if st == 404:
+                            answerlist.append(AnswerBase(answer="404NF!"))
+                            continue
                 else:
                     answerlist.append(AnswerBase(answer="Error in api"))
                 return answerlist
