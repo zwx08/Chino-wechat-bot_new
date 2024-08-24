@@ -1,6 +1,6 @@
 #默认为使用wxid作为userid，如果想要更改为使用单一userid请更改所有调用API_answer后的wxid改为userid
-from ast import Tuple
 import asyncio
+import base64
 import os
 from pluginlib import PluginLoader
 import pluginlib
@@ -124,7 +124,12 @@ async def send_msg_an(plugin_result: AnswerBase,wxid):        #允许传入列�
             if isinstance(answer_send,str):
                 await api.send_msg.image(wxid,answer_send)
             elif isinstance(answer_send,dict):
-                await api.send_msg.image(wxid,**answer_send)
+                #如何answer_send当中有BytesIO键的话，则直接将BytesIO作为图片发送
+                if "BytesIO" in answer_send:
+                    base64_string = base64.b64encode(answer_send["BytesIO"]).decode('utf-8')
+                    await api.send_msg.image(wxid,base64_string)
+                else:
+                    await api.send_msg.image(wxid,**answer_send)
         case "File":
             if isinstance(answer_send,str):
                 await api.send_msg.file(wxid,answer_send)
