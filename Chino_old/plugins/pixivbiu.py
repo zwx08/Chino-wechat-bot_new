@@ -154,6 +154,7 @@ image_urls:
         # Increase the image width to accommodate the longest text line
         image_width = max(base_image_width, 400 + max_text_width)
 
+        # Create a new image with the computed dimensions
         result_image = Image.new("RGB", (image_width, image_height), 'white') # type: ignore
         draw = ImageDraw.Draw(result_image)
         current_height = 0
@@ -165,14 +166,20 @@ image_urls:
                 draw.text((10, text_y), line, fill="black", font=font)
                 text_y += font.getbbox(line)[3] - font.getbbox(line)[1]
 
-            # Paste image
-            max_height = max(text_height, img.height)
-            result_image.paste(img, (image_width - img.width - 10, current_height + (max_height - img.height) // 2))
-            current_height += max_height + 20
+            # Paste image with boundary checks
+            img_x = image_width - img.width - 10
+            img_y = current_height + (max(text_height, img.height) - img.height) // 2
+
+            # Ensure the image is within the bounds of the result_image
+            if img_x + img.width > image_width:
+                img_x = image_width - img.width
+            if img_y + img.height > image_height:
+                img_y = image_height - img.height
+
+            result_image.paste(img, (img_x, img_y))
+            current_height += max(text_height, img.height) + 20
 
         return True, result_image, None
-
-
 
 
     @staticmethod

@@ -19,7 +19,6 @@ import xmltodict
 from .standard_print import printerr,printinf,printmsg
 from .standard_print import logger
 import func_timeout
-import ujson
 import xml.etree.ElementTree as ET
 
 
@@ -177,6 +176,15 @@ async def send_msg_an(plugin_result: AnswerBase,wxid):        #允许传入列�
     #     send_msg.text(wxid,str(an_))
     return
 
+async def process_plugin_result(plugin_result, wxid):
+    try:
+        if isinstance(plugin_result, AnswerBase):
+            await send_msg_an(plugin_result, wxid)
+        elif isinstance(plugin_result, AnswerBaseList):
+            for answer_result_base in plugin_result.answers:
+                await send_msg_an(answer_result_base, wxid)
+    except Exception:
+        logger.exception("Error sending plugin result")
 
 
 
@@ -197,7 +205,7 @@ async def answer(wxid,wxid_group,qu):  #主调用
                         qu_reply_content=qu_xml_data["msg"]['appmsg']['refermsg']['content']
                         qu_reply_wxid=qu_xml_data["msg"]['appmsg']['refermsg']['chatusr']#如果是None是回复的消息与发送这条回复消息的人是一个人(注意由于提前已经定义为None，所以需要先行判断是否有qu_reply_content)
                 #if 'img' in qu_xml_data["msg"]:
-        except:  # noqa: E722
+        except:
             pass
 
     #@识别
@@ -230,14 +238,6 @@ async def answer(wxid,wxid_group,qu):  #主调用
     msg_l={"robotname":robotname,"qu":qu,"wxid":wxid,"wxid_group":wxid_group,"qu_xml":qu_xml,"qu_xml_data":qu_xml_data,"qu_reply_content":qu_reply_content,"qu_reply_wxid":qu_reply_wxid,'isChatroom': isChatroom}
     print(msg_l)
 
-    # #admin部分
-    # data=data_read()
-    # wxid_admin=data["wxid_admin"]
-    # if wxid in wxid_admin or wxid_group in wxid_admin:
-    #     sql_row(row_qukey_admin)
-    #     if an_ is not None:
-    #         await send_msg_an()
-    #         return
 
     block=data["wxid_block"]
     white=data["wxid_white"]
@@ -247,69 +247,41 @@ async def answer(wxid,wxid_group,qu):  #主调用
         if wxid not in white or wxid_group not in white:   #白名单
             return
 
-
-
-
-    plugin_help={}
-    #plugin
-    #print(plugins.items())
+    plugin_help = {}
     for plugins_type, plugins_sec in plugins.items():
-        match plugins_type:
-            case "plugin_common":
-                plugin_help["plugin_common"]={}
-                for plugin_name, plugin_class in plugins_sec.items():
-                    plugin_result=await plugin_class.main(msg_l)
-                    #字典中增加插件名：插件结果
-                    plugin_help["plugin_common"][plugin_name]=plugin_class.help()
-                    if plugin_result is not None:
-                        if isinstance(plugin_result,AnswerBase):
-                            await send_msg_an(plugin_result,wxid)
-                        elif isinstance(plugin_result,AnswerBaseList):
-                            for answer_result_base in plugin_result.answers:
-                                await send_msg_an(answer_result_base,wxid)
-            case "plugin_admin":
-                plugin_help["plugin_admin"]={}
-                if msg_l["wxid"] in data["wxid_admin"]:
-                    for plugin_name,plugin_class in plugins_sec:
-                        plugin_result=await plugin_class.main(msg_l)
-                        plugin_help["plugin_admin"][plugin_name]=plugin_class.help()
-                        if plugin_result is not None:
-                            if isinstance(plugin_result,AnswerBase):
-                                await send_msg_an(plugin_result,wxid)
-                            elif isinstance(plugin_result,AnswerBaseList):
-                                for answer_result_base in plugin_result.answers:
-                                    await send_msg_an(answer_result_base,wxid)
+        try:
+            match plugins_type:
+                case "plugin_common":
+                    plugin_help["plugin_common"] = {}
+                    for plugin_name, plugin_class in plugins_sec.items():
+                        try:
+                            plugin_result = await plugin_class.main(msg_l)
+                            plugin_help["plugin_common"][plugin_name] = plugin_class.help()
+                            if plugin_result is not None:
+                                await process_plugin_result(plugin_result, wxid)
+                        except Exception:
+                            logger.exception(f"Error processing common plugin {plugin_name}")
 
+                case "plugin_admin":
+                    plugin_help["plugin_admin"] = {}
+                    if msg_l["wxid"] in data["wxid_admin"]:
+                        for plugin_name, plugin_class in plugins_sec.items():
+                            try:
+                                plugin_result = await plugin_class.main(msg_l)
+                                plugin_help["plugin_admin"][plugin_name] = plugin_class.help()
+                                if plugin_result is not None:
+                                    await process_plugin_result(plugin_result, wxid)
+                            except Exception:
+                                logger.exception(f"Error processing admin plugin {plugin_name}")
+        except Exception:
+            logger.exception(f"Error processing plugin type {plugins_type}")
 
+    if msg_l["qu"].find("&help") == 0:
+        try:
+            await send_msg_an(format_plugin_help(plugin_help), wxid)
+        except Exception:
+            logger.exception("Error sending help message")
 
-    if msg_l["qu"].find("&help")==0:
-        await send_msg_an(format_plugin_help(plugin_help),wxid)
-    # #other部分
-    # sql_row(row_qukey)
-    # if an_ is not None :
-    #     await send_msg_an()
-    #     return
-    #access接入部分
-    # sql_row_access(row_access)
-    # #print(an_)
-    # if an_ is not None :
-    #     await send_msg_an()
-    #     return
-    # return
-
-    # #answerAPI部分
-    # answer=API_answer(qu,wxid)
-    # if 'status' in answer:
-    #     st=answer['status']
-    # if 'answer' in answer :
-    #     an_=answer['answer']
-    # if 'options' in answer:
-    #         options=answer['options']
-    #         an_=an_+ '  :  ' + str(options)
-
-    # if an_ != None :
-    #     send_msg.text_an()
-    #     return
 
 
 if __name__ == "__main__":
